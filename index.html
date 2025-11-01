@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat mit Gyro-Effekt</title>
+  <style>
+    :root {
+      --accent: #4CAF50;
+      --secondary: #E0E0E0;
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .chat {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .msg-rx {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-block: .5rem;
+    }
+
+    .msg-tx {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-block: .5rem;
+    }
+
+    .msg-content-rx,
+    .msg-content-tx {
+      padding-inline: 12px;
+      padding-block: 5px;
+      border-radius: 15px;
+      max-width: 80vw;
+      transition: box-shadow 0.1s ease;
+    }
+
+    .msg-content-rx {
+      background-color: var(--secondary);
+      margin-left: 12px;
+      box-shadow: 0 0 12px rgba(63, 63, 63, .1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .msg-content-tx {
+      background-color: var(--accent);
+      color: white;
+      margin-right: 12px;
+      box-shadow: 12px 12px 44px rgba(25, 110, 81, .3);
+    }
+
+    /* Toggle switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toggle-container">
+    <label class="switch">
+      <input type="checkbox" id="gyroToggle">
+      <span class="slider"></span>
+    </label>
+    <span>Gyro-Effekt aktivieren</span>
+  </div>
+
+  <div class="chat">
+    <!--message-->
+    <div class="msg-rx">
+      <div class="msg-content-rx">Hi!</div>
+    </div>
+    <!--message-->
+    <div class="msg-tx">
+      <div class="msg-content-tx">HI HOW ARE YOU?</div>
+    </div>
+    <!--message-->
+    <div class="msg-tx">
+      <div class="msg-content-tx">HI Lorem, ipsum dolor sit elit. Assumenda consectetur
+        deleniti sint animi aspernatur eaque similique blanditiis voluptas, eius nihil repellendus!</div>
+    </div>
+    <!--message-->
+    <div class="msg-rx">
+      <div class="msg-content-rx">Hi!</div>
+    </div>
+  </div>
+
+  <script>
+    const toggle = document.getElementById('gyroToggle');
+    const rxMessages = document.querySelectorAll('.msg-content-rx');
+    const txMessages = document.querySelectorAll('.msg-content-tx');
+    let gyroActive = false;
+
+    function handleOrientation(event) {
+      if (!gyroActive) return;
+
+      const beta = event.beta || 0; // front/back tilt (-180 to 180)
+      const gamma = event.gamma || 0; // left/right tilt (-90 to 90)
+
+      const xOffset = Math.max(-20, Math.min(20, gamma / 2)); // Begrenzung
+      const yOffset = Math.max(-20, Math.min(20, beta / 4));
+
+      rxMessages.forEach(msg => {
+        msg.style.boxShadow = `${xOffset}px ${yOffset}px 15px rgba(63, 63, 63, 0.2)`;
+      });
+
+      txMessages.forEach(msg => {
+        msg.style.boxShadow = `${-xOffset}px ${-yOffset}px 25px rgba(25, 110, 81, 0.4)`;
+      });
+    }
+
+    toggle.addEventListener('change', async () => {
+      gyroActive = toggle.checked;
+
+      if (gyroActive && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission !== 'granted') {
+            alert('Bitte erlaube den Zugriff auf den Bewegungssensor.');
+            toggle.checked = false;
+            gyroActive = false;
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Sensor konnte nicht aktiviert werden.');
+          toggle.checked = false;
+          gyroActive = false;
+          return;
+        }
+      }
+
+      if (gyroActive) {
+        window.addEventListener('deviceorientation', handleOrientation);
+      } else {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        rxMessages.forEach(msg => msg.style.boxShadow = "0 0 12px rgba(63,63,63,.1)");
+        txMessages.forEach(msg => msg.style.boxShadow = "12px 12px 44px rgba(25,110,81,.3)");
+      }
+    });
+  </script>
+</body>
+</html>
