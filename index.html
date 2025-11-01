@@ -153,26 +153,35 @@
     const txMessages = document.querySelectorAll('.msg-content-tx');
     let gyroActive = false;
 
-    function handleOrientation(event) {
-      if (!gyroActive) return;
+function handleOrientation(event) {
+  if (!gyroActive) return;
 
-      const beta = event.beta || 0;   // Neigung nach vorne/hinten (-180 bis 180)
-      const gamma = event.gamma || 0; // Neigung seitlich (-90 bis 90)
+  const beta = event.beta || 0;   // Neigung nach vorne/hinten (-180 bis 180)
+  const gamma = event.gamma || 0; // Neigung seitlich (-90 bis 90)
 
-      // Skalierte Werte (stärkerer Effekt)
-      const xOffset = Math.max(-30, Math.min(30, gamma * 1.2)); //1.2
-      const yOffset = Math.max(-30, Math.min(30, beta * 2.5)); //0.8
+  // --- Offset-Werte für natürliche Handy-Halteposition ---
+  const betaOffset = 20;  // typischer Winkel beim normalen Halten (leicht nach hinten geneigt)
+  const gammaOffset = 0;  // bei Bedarf leichtes seitliches Offset
 
-      rxMessages.forEach(msg => {
-        msg.style.boxShadow = `${xOffset / 2}px ${yOffset / 2}px 25px rgba(255, 255, 255, 0.15)`;
-        msg.style.transform = `translate(${xOffset / 10}px, ${yOffset / 10}px)`;
-      });
+  // --- Angepasste Werte mit Offsets ---
+  const betaAdjusted = beta - betaOffset;
+  const gammaAdjusted = gamma - gammaOffset;
 
-      txMessages.forEach(msg => {
-        msg.style.boxShadow = `${-xOffset / .5}px ${-yOffset / .5}px 40px rgba(0, 255, 174, 0.6)`; //1.2 -> .5
-        msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`; //-x
-      });
-    }
+  // --- Skalierung (wie vorher) ---
+  const xOffset = Math.max(-30, Math.min(30, gammaAdjusted * 1.2));
+  const yOffset = Math.max(-30, Math.min(30, betaAdjusted * 2.5));
+
+  rxMessages.forEach(msg => {
+    msg.style.boxShadow = `${xOffset / 2}px ${yOffset / 2}px 25px rgba(255, 255, 255, 0.15)`;
+    msg.style.transform = `translate(${xOffset / 10}px, ${yOffset / 10}px)`;
+  });
+
+  txMessages.forEach(msg => {
+    msg.style.boxShadow = `${-xOffset / .5}px ${-yOffset / .5}px 40px rgba(0, 255, 174, 0.6)`;
+    msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`;
+  });
+}
+
 
     toggle.addEventListener('change', async () => {
       gyroActive = toggle.checked;
