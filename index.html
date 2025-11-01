@@ -170,12 +170,12 @@
     const yOffset = Math.max(-30, Math.min(30, betaAdjusted * .8));
 
     rxMessages.forEach(msg => {
-      msg.style.boxShadow = `${xOffset / 8}px ${yOffset / 8}px 25px rgba(255, 255, 255, 0.15)`;
+      msg.style.boxShadow = `${xOffset / 5}px ${yOffset / 5}px 25px rgba(255, 255, 255, 0.15)`;
       msg.style.transform = `translate(${xOffset / 8}px, ${yOffset / 8}px)`;
     });
 
     txMessages.forEach(msg => {
-      msg.style.boxShadow = `${-xOffset / 15}px ${-yOffset / 15}px 40px rgba(0, 255, 174, 0.6)`;
+      msg.style.boxShadow = `${-xOffset / 5}px ${-yOffset / 5}px 40px rgba(0, 255, 174, 0.6)`;
       msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`;
     });
   }
