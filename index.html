@@ -170,8 +170,8 @@
     const yOffset = Math.max(-30, Math.min(30, betaAdjusted * .8));
 
     rxMessages.forEach(msg => {
-      msg.style.boxShadow = `${xOffset / 15}px ${yOffset / 15}px 25px rgba(255, 255, 255, 0.15)`;
-      msg.style.transform = `translate(${xOffset / 10}px, ${yOffset / 10}px)`;
+      msg.style.boxShadow = `${xOffset / 8}px ${yOffset / 8}px 25px rgba(255, 255, 255, 0.15)`;
+      msg.style.transform = `translate(${xOffset / 8}px, ${yOffset / 8}px)`;
     });
 
     txMessages.forEach(msg => {
