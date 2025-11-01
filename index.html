@@ -191,38 +191,37 @@
   let betaZero = 0;
   let gammaZero = 0;
 
+  // --- Gyro-Effekt ---
   function handleOrientation(event) {
     if (!gyroActive) return;
 
     const beta = event.beta || 0;
     const gamma = event.gamma || 0;
 
-    // --- Offset durch Kalibrierung (Nullpunkt) ---
     const betaAdjusted = beta - betaZero;
     const gammaAdjusted = gamma - gammaZero;
 
-    // --- Skalierung (Effektstärke) ---
-    const xOffset = Math.max(-30, Math.min(30, gammaAdjusted * 1.2));
-    const yOffset = Math.max(-30, Math.min(30, betaAdjusted * 1));
+    // ---- Effektstärke stärker ----
+    const xOffset = Math.max(-40, Math.min(40, gammaAdjusted * 2)); // vorher 1.2
+    const yOffset = Math.max(-40, Math.min(40, betaAdjusted * 1.5)); // vorher 1
 
     rxMessages.forEach(msg => {
-      msg.style.boxShadow = `${xOffset / 4}px ${yOffset / 4}px 25px rgba(255, 255, 255, 0.15)`;
-      //msg.style.transform = `translate(${xOffset / 8}px, ${yOffset / 8}px)`;
+      msg.style.boxShadow = `${xOffset / 3}px ${yOffset / 3}px 35px rgba(255, 255, 255, 0.2)`;
+      msg.style.transform = `translate(${xOffset / 6}px, ${yOffset / 6}px)`;
     });
 
     txMessages.forEach(msg => {
-      msg.style.boxShadow = `${-xOffset / 4}px ${-yOffset / 4}px 40px rgba(0, 255, 174, 0.6)`;
-      //msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`;
+      msg.style.boxShadow = `${-xOffset / 3}px ${-yOffset / 3}px 50px rgba(0, 255, 174, 0.7)`;
+      msg.style.transform = `translate(${-xOffset / 6}px, ${-yOffset / 6}px)`;
     });
   }
 
-  // --- Kalibrierung: Durchschnitt der ersten paar Messwerte ---
   function calibrateGyro() {
     return new Promise(resolve => {
       let samples = [];
       const collect = (event) => {
         samples.push({ beta: event.beta, gamma: event.gamma });
-        if (samples.length >= 20) { // etwa 0,5 Sekunden sammeln
+        if (samples.length >= 20) {
           window.removeEventListener('deviceorientation', collect);
           betaZero = samples.reduce((a, b) => a + b.beta, 0) / samples.length;
           gammaZero = samples.reduce((a, b) => a + b.gamma, 0) / samples.length;
@@ -255,7 +254,6 @@
     }
 
     if (gyroActive) {
-      // --- Kalibrierung durchführen ---
       await calibrateGyro();
       window.addEventListener('deviceorientation', handleOrientation);
     } else {
@@ -270,7 +268,49 @@
       });
     }
   });
+
+  // --- Kamera-Helligkeit für Ambient-Look ---
+  const video = document.createElement('video');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  async function initCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = stream;
+      video.play();
+      requestAnimationFrame(updateBrightness);
+    } catch (err) {
+      console.warn('Kamera konnte nicht gestartet werden:', err);
+    }
+  }
+
+  function getAverageBrightness() {
+    const width = 32;
+    const height = 32;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(video, 0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, width, height).data;
+    let total = 0;
+    for (let i = 0; i < imageData.length; i += 4) {
+      // Helligkeit = 0.299*R + 0.587*G + 0.114*B
+      total += 0.299 * imageData[i] + 0.587 * imageData[i + 1] + 0.114 * imageData[i + 2];
+    }
+    return total / (width * height);
+  }
+
+  function updateBrightness() {
+    const avg = getAverageBrightness(); // 0..255
+    // Map 0..255 auf 0.05..0.25 für Hintergrundhelligkeit
+    const brightness = 0.05 + (avg / 255) * 0.2;
+    document.body.style.backgroundColor = `rgba(14,14,14,${brightness + 0.8})`; // smooth-ish
+    requestAnimationFrame(updateBrightness);
+  }
+
+  initCamera();
 </script>
+
 
 </body>
 </html>
