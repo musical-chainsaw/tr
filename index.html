@@ -160,8 +160,8 @@
       const gamma = event.gamma || 0; // Neigung seitlich (-90 bis 90)
 
       // Skalierte Werte (stärkerer Effekt)
-      const xOffset = Math.max(-30, Math.min(30, gamma * 1.2));
-      const yOffset = Math.max(-30, Math.min(30, beta * 0.8));
+      const xOffset = Math.max(-30, Math.min(30, gamma * 2)); //1.2
+      const yOffset = Math.max(-30, Math.min(30, beta * 1.4)); //0.8
 
       rxMessages.forEach(msg => {
         msg.style.boxShadow = `${xOffset / 2}px ${yOffset / 2}px 25px rgba(255, 255, 255, 0.15)`;
