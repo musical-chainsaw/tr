@@ -147,77 +147,94 @@
     </div>
   </div>
 
-  <script>
-    const toggle = document.getElementById('gyroToggle');
-    const rxMessages = document.querySelectorAll('.msg-content-rx');
-    const txMessages = document.querySelectorAll('.msg-content-tx');
-    let gyroActive = false;
+<script>
+  const toggle = document.getElementById('gyroToggle');
+  const rxMessages = document.querySelectorAll('.msg-content-rx');
+  const txMessages = document.querySelectorAll('.msg-content-tx');
+  let gyroActive = false;
+  let betaZero = 0;
+  let gammaZero = 0;
 
-function handleOrientation(event) {
-  if (!gyroActive) return;
+  function handleOrientation(event) {
+    if (!gyroActive) return;
 
-  const beta = event.beta || 0;   // Neigung nach vorne/hinten (-180 bis 180)
-  const gamma = event.gamma || 0; // Neigung seitlich (-90 bis 90)
+    const beta = event.beta || 0;
+    const gamma = event.gamma || 0;
 
-  // --- Offset-Werte für natürliche Handy-Halteposition ---
-  const betaOffset = 40;  // typischer Winkel beim normalen Halten (leicht nach hinten geneigt)
-  const gammaOffset = 0;  // bei Bedarf leichtes seitliches Offset
+    // --- Offset durch Kalibrierung (Nullpunkt) ---
+    const betaAdjusted = beta - betaZero;
+    const gammaAdjusted = gamma - gammaZero;
 
-  // --- Angepasste Werte mit Offsets ---
-  const betaAdjusted = beta - betaOffset;
-  const gammaAdjusted = gamma - gammaOffset;
+    // --- Skalierung (Effektstärke) ---
+    const xOffset = Math.max(-30, Math.min(30, gammaAdjusted * 1.2));
+    const yOffset = Math.max(-30, Math.min(30, betaAdjusted * 1.6));
 
-  // --- Skalierung (wie vorher) ---
-  const xOffset = Math.max(-30, Math.min(30, gammaAdjusted * 1.2));
-  const yOffset = Math.max(-30, Math.min(30, betaAdjusted * 2.5));
+    rxMessages.forEach(msg => {
+      msg.style.boxShadow = `${xOffset / 2}px ${yOffset / 2}px 25px rgba(255, 255, 255, 0.15)`;
+      msg.style.transform = `translate(${xOffset / 10}px, ${yOffset / 10}px)`;
+    });
 
-  rxMessages.forEach(msg => {
-    msg.style.boxShadow = `${xOffset / 2}px ${yOffset / 2}px 25px rgba(255, 255, 255, 0.15)`;
-    msg.style.transform = `translate(${xOffset / 10}px, ${yOffset / 10}px)`;
-  });
+    txMessages.forEach(msg => {
+      msg.style.boxShadow = `${-xOffset / 0.5}px ${-yOffset / 0.5}px 40px rgba(0, 255, 174, 0.6)`;
+      msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`;
+    });
+  }
 
-  txMessages.forEach(msg => {
-    msg.style.boxShadow = `${-xOffset / .5}px ${-yOffset / .5}px 40px rgba(0, 255, 174, 0.6)`;
-    msg.style.transform = `translate(${xOffset / 15}px, ${-yOffset / 15}px)`;
-  });
-}
+  // --- Kalibrierung: Durchschnitt der ersten paar Messwerte ---
+  function calibrateGyro() {
+    return new Promise(resolve => {
+      let samples = [];
+      const collect = (event) => {
+        samples.push({ beta: event.beta, gamma: event.gamma });
+        if (samples.length >= 20) { // etwa 0,5 Sekunden sammeln
+          window.removeEventListener('deviceorientation', collect);
+          betaZero = samples.reduce((a, b) => a + b.beta, 0) / samples.length;
+          gammaZero = samples.reduce((a, b) => a + b.gamma, 0) / samples.length;
+          resolve();
+        }
+      };
+      window.addEventListener('deviceorientation', collect);
+    });
+  }
 
+  toggle.addEventListener('change', async () => {
+    gyroActive = toggle.checked;
 
-    toggle.addEventListener('change', async () => {
-      gyroActive = toggle.checked;
-
-      if (gyroActive && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission !== 'granted') {
-            alert('Bitte erlaube den Zugriff auf den Bewegungssensor.');
-            toggle.checked = false;
-            gyroActive = false;
-            return;
-          }
-        } catch (err) {
-          console.error(err);
-          alert('Sensor konnte nicht aktiviert werden.');
+    if (gyroActive && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') {
+          alert('Bitte erlaube den Zugriff auf den Bewegungssensor.');
           toggle.checked = false;
           gyroActive = false;
           return;
         }
+      } catch (err) {
+        console.error(err);
+        alert('Sensor konnte nicht aktiviert werden.');
+        toggle.checked = false;
+        gyroActive = false;
+        return;
       }
+    }
 
-      if (gyroActive) {
-        window.addEventListener('deviceorientation', handleOrientation);
-      } else {
-        window.removeEventListener('deviceorientation', handleOrientation);
-        rxMessages.forEach(msg => {
-          msg.style.boxShadow = "0 0 14px rgba(255,255,255,0.05)";
-          msg.style.transform = "translate(0,0)";
-        });
-        txMessages.forEach(msg => {
-          msg.style.boxShadow = "0 0 25px rgba(0,255,174,0.4)";
-          msg.style.transform = "translate(0,0)";
-        });
-      }
-    });
-  </script>
+    if (gyroActive) {
+      // --- Kalibrierung durchführen ---
+      await calibrateGyro();
+      window.addEventListener('deviceorientation', handleOrientation);
+    } else {
+      window.removeEventListener('deviceorientation', handleOrientation);
+      rxMessages.forEach(msg => {
+        msg.style.boxShadow = "0 0 14px rgba(255,255,255,0.05)";
+        msg.style.transform = "translate(0,0)";
+      });
+      txMessages.forEach(msg => {
+        msg.style.boxShadow = "0 0 25px rgba(0,255,174,0.4)";
+        msg.style.transform = "translate(0,0)";
+      });
+    }
+  });
+</script>
+
 </body>
 </html>
