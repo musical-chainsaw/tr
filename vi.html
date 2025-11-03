@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  
+<button onclick="vibrate(50, 50, 50)">505050</button>
+<button onclick="vibrate(100)"></button>
+    <script>
+function vibrate(...pattern) {
+  // Prüfen, ob das Gerät die Vibration-API unterstützt
+  if (navigator.vibrate) {
+    // Wenn mehrere Argumente angegeben sind, wird das als Muster interpretiert
+    if (pattern.length > 1) {
+      navigator.vibrate(pattern);
+    } else {
+      // Wenn nur ein Wert angegeben ist, einfach einmal vibrieren
+      navigator.vibrate(pattern[0]);
+    }
+  } else {
+    console.warn("Vibration wird von diesem Gerät/Browser nicht unterstützt.");
+  }
+}
+</script>
+</body>
+</html>
